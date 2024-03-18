@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon app.ts",
-    "start": "node app.js",
+    "start": "prisma generate && node app.js",
     "migrate": "prisma migrate dev"
   },
   "license": "MIT",
