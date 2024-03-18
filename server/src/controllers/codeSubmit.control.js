@@ -1,11 +1,16 @@
 import { PrismaClient } from "@prisma/client";
 import { HTTP_STATUS } from "../enums/enums.js";
+import { redis } from "../redis.js";
 
 // get all the code submitted
 const prisma = new PrismaClient();
 
 export const getALLSubmittedCode = async (_, res) => {
     try {
+        const cachedData = await redis.get("submittedCode");
+        if (cachedData) {
+            return res.status(HTTP_STATUS.OK).json({ data: JSON.parse(cachedData), message: "All submitted code fetched successfully from cache", status: HTTP_STATUS.OK });
+        }
         const submittedCode = await prisma.user.findMany({
             include: {
                 codes: {
@@ -18,8 +23,10 @@ export const getALLSubmittedCode = async (_, res) => {
                 createdAt: 'desc'
             }
         });
+        await redis.set("submittedCode", JSON.stringify(submittedCode));
         return res.status(HTTP_STATUS.OK).json({ data: submittedCode, message: "All submitted code fetched successfully", status: HTTP_STATUS.OK });
     } catch (error) {
+        console.log("Error fetching submitted code:", error);
         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ message: "Internal server error " + JSON.stringify(error) });
     }
 }
